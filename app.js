@@ -5,45 +5,244 @@ var config = require(__base + '/server/config.js')
 if (config.CONSOLE_LOG == 'off') {
   console.log = function () { }
 }
+var constants = require(__base + '/server/constants.js')
 
-'use strict';
+// add log time
+require('console-stamp')(console, 'yyyy.mm.dd HH:MM:ss.l')
 
 const { WebhookClient } = require('dialogflow-fulfillment');
+const { Suggestion } = require('dialogflow-fulfillment');
 const express = require('express');
 const bodyParser = require('body-parser');
+const rpn = require('request-promise-native');
 
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-
-function welcome(agent) {
-  agent.add(`Welcome to Express.JS webhook!`);
-}
-
-function fallback(agent) {
-  agent.add(`I didn't understand`);
-  agent.add(`I'm sorry, can you try again?`);
-}
-
-function WebhookProcessing(req, res) {
+app.post('/', async (req, res) => {
+  console.log(require('util').inspect(req.body, { depth: null }));
   const agent = new WebhookClient({ request: req, response: res });
-  console.info(`agent set`);
 
+  // Google Actions agent functions start from here
+  function welcome(agent) {
+    if (req.body.queryResult.languageCode.indexOf('tw') > -1) {
+      agent.add(constants.GOOGLE_ACTIONS_WELCOME_SPEECH.TW)
+      agent.add(new Suggestion(constants.GOOGLE_ACTIONS_SUGGESTION.TW))
+    }
+    else {
+      agent.add(constants.GOOGLE_ACTIONS_WELCOME_SPEECH.HK)
+      agent.add(new Suggestion(constants.GOOGLE_ACTIONS_SUGGESTION.HK))
+    }
+  }
+
+  function fallback(agent) {
+    var speech = ''
+    if (req.body.queryResult.languageCode.indexOf('tw') > -1) 
+      speech = constants.DEFAULT_FALLBACK_TW_SPEECH_POOL[
+        getRandomInt(constants.DEFAULT_FALLBACK_TW_SPEECH_POOL.length)
+      ]
+    else 
+      speech = constants.DEFAULT_FALLBACK_HK_SPEECH_POOL[
+        getRandomInt(constants.DEFAULT_FALLBACK_HK_SPEECH_POOL.length)
+      ]
+    
+    agent.add(speech)
+    agent.add(new Suggestion(constants.GOOGLE_ACTIONS_SUGGESTION))
+  }
+
+  function howToUse(agent) {
+    if (req.body.queryResult.languageCode.indexOf('tw') > -1) {
+      agent.add(constants.HOW_TO_USE_SPEECH.TW)
+      agent.add(new Suggestion(constants.GOOGLE_ACTIONS_SUGGESTION.TW))
+    }
+    else {
+      agent.add(constants.HOW_TO_USE_SPEECH.HK)
+      agent.add(new Suggestion(constants.GOOGLE_ACTIONS_SUGGESTION.HK))
+    }
+  }
+
+  async function advanceSearch(agent) {
+    if (req.body.queryResult.parameters.any)
+      await rpn.get(advanceSearchUrl(req.body.queryResult.parameters.any))
+        .then(body => {
+          body = JSON.parse(body);
+          return body
+        }).then(body => {
+          if (body.content.length <= 0) {
+            agent.add(constants.NO_RESULT_SPEECH);
+          }
+          var speech = speechMaker(body)
+          agent.add(speech);
+        });
+    if (req.body.queryResult.parameters.category)
+      await rpn.get(categorySearchUrl(req.body.queryResult.parameters.category))
+        .then(body => {
+          body = JSON.parse(body);
+          console.log(require('util').inspect(body, { depth: null }));
+          return body
+        }).then(body => {
+          if (body.content.length <= 0) {
+            agent.add(constants.NO_RESULT_SPEECH);
+          }
+          var speech = speechMaker(body)
+          agent.add(speech);
+        });
+    return Promise.resolve(agent);
+  }
+
+  // final, set intentMap
   let intentMap = new Map();
   intentMap.set('Default Welcome Intent', welcome);
   intentMap.set('Default Fallback Intent', fallback);
+  intentMap.set('returnHowToUse', howToUse);
+  intentMap.set('advanceSearch', advanceSearch);
   // intentMap.set('<INTENT_NAME_HERE>', yourFunctionHandler);
   agent.handleRequest(intentMap);
+})
+
+// self-created functions start from here
+function advanceSearchUrl(queryText) {
+  return config.ML.SERVER_URL + config.ML.SEARCH_NEWS_URL + encodeURIComponent(queryText)
 }
 
+function categorySearchUrl(category) {
+  var url =
+    config.ML.SERVER_URL + config.ML.RTN_HOT_NEWS_URL
 
-// Webhook
-app.post('/webhook', function (req, res) {
-  console.info(`\n\n>>>>>>> S E R V E R   H I T <<<<<<<`);
-  WebhookProcessing(req, res);
-});
+  switch (category) {
+    case '最新':
+      url =
+        config.ML.SERVER_URL + config.ML.RTN_LATEST_NEWS_URL
+      break
 
-app.listen(5003, function () {
-  console.info(`Webhook listening on port 8080!`)
+    case '熱門':
+      break
+
+    case '壹點就報':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.ONEPOINT
+      break
+
+    case '推薦':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.RECOMMEND
+      break
+
+    case '要聞':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.HILIGHT
+      break
+
+    case '社會':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.SOCIETY
+      break
+
+    case '娛樂':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.ENTERTAINMENT
+      break
+
+    case '人物':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.PEOPLE
+      break
+
+    case '美妝':
+    case '保養':
+    case '美妝保養':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.MAKEUP
+      break
+
+    case '生活':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.LIFE
+      break
+
+    case '科技':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.TECH
+      break
+
+    case '時尚':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.FASHION
+      break
+
+    case '國際':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.INTERNATIONAL
+      break
+
+    case '美食':
+    case '旅遊':
+    case '美食旅遊':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.FOODANDTRAVEL
+      break
+
+    case '經典':
+    case '經典檔案':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.CLASSIC
+      break
+
+    case '專欄':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.COLUMN
+      break
+
+    default:
+      console.log('default, set to hot')
+      break
+  }
+  return url
+}
+
+function speechMaker(body) {
+  var speech = ''
+  for (let index = 0; index < body.content.length; index++) {
+    speech += body.content[index].title + '\n'
+    if (index == constants.GOOGLE_ACTIONS_MAX_RETURN - 1) {
+      return speech
+    }
+  }
+}
+
+function getRandomInt(max) {
+  return Math.floor(Math.random() * Math.floor(max))
+}
+
+app.listen(config.PORT, function () {
+  console.info(`Webhook listening on port `, config.PORT)
 });
