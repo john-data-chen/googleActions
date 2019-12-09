@@ -118,26 +118,12 @@ function categorySearchUrl(category) {
 
     case '熱門':
       break
-
-    case '壹點就報':
+    
+    case '政治':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
-        config.CAT_ID.ONEPOINT
-      break
-
-    case '推薦':
-      url =
-        config.ML.SERVER_URL +
-        config.ML.RTN_CAT_NEWS_URL +
-        config.CAT_ID.RECOMMEND
-      break
-
-    case '要聞':
-      url =
-        config.ML.SERVER_URL +
-        config.ML.RTN_CAT_NEWS_URL +
-        config.CAT_ID.HILIGHT
+        config.CAT_ID.POLITICAL
       break
 
     case '社會':
@@ -145,6 +131,27 @@ function categorySearchUrl(category) {
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
         config.CAT_ID.SOCIETY
+      break
+    
+    case '國際':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.INTERNATIONAL
+      break
+    
+    case '財經':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.FINANCE
+      break
+    
+    case '生活':
+      url =
+        config.ML.SERVER_URL +
+        config.ML.RTN_CAT_NEWS_URL +
+        config.CAT_ID.LIFE
       break
 
     case '娛樂':
@@ -154,72 +161,39 @@ function categorySearchUrl(category) {
         config.CAT_ID.ENTERTAINMENT
       break
 
-    case '人物':
+    case '體育':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
-        config.CAT_ID.PEOPLE
+        config.CAT_ID.SPORT
       break
-
-    case '美妝':
-    case '保養':
-    case '美妝保養':
+    
+    case '辣蘋道':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
-        config.CAT_ID.MAKEUP
+        config.CAT_ID.GIRL
       break
-
-    case '生活':
+    
+    case '微視蘋':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
-        config.CAT_ID.LIFE
+        config.CAT_ID.MICROMOIVE
       break
-
-    case '科技':
+    
+    case '論壇':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
-        config.CAT_ID.TECH
+        config.CAT_ID.FORUM
       break
-
-    case '時尚':
+    
+    case '副刊':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
-        config.CAT_ID.FASHION
-      break
-
-    case '國際':
-      url =
-        config.ML.SERVER_URL +
-        config.ML.RTN_CAT_NEWS_URL +
-        config.CAT_ID.INTERNATIONAL
-      break
-
-    case '美食':
-    case '旅遊':
-    case '美食旅遊':
-      url =
-        config.ML.SERVER_URL +
-        config.ML.RTN_CAT_NEWS_URL +
-        config.CAT_ID.FOODANDTRAVEL
-      break
-
-    case '經典':
-    case '經典檔案':
-      url =
-        config.ML.SERVER_URL +
-        config.ML.RTN_CAT_NEWS_URL +
-        config.CAT_ID.CLASSIC
-      break
-
-    case '專欄':
-      url =
-        config.ML.SERVER_URL +
-        config.ML.RTN_CAT_NEWS_URL +
-        config.CAT_ID.COLUMN
+        config.CAT_ID.SUPPLEMENT
       break
 
     default:

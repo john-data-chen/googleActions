@@ -1,29 +1,26 @@
 const CONSOLE_LOG = 'on'
 const PORT = 5003
 const ML = {
-  SERVER_URL: 'http://mluat.api.twnextdigital.com',
+  SERVER_URL: 'https://mluat-api.twnextdigital.com/',
   // search keyword (tag)
-  SEARCH_NEWS_URL: '/v1/2/Search?KeyWord=',
+  SEARCH_NEWS_URL: '/v1/1/Search?KeyWord=',
   // RTN
-  RTN_HOT_NEWS_URL: '/v1/2/ArticleList?Type=RTN_ALL&sortBy=VIEW',
-  RTN_LATEST_NEWS_URL: '/v1/2/ArticleList?Type=RTN_ALL&sortBy=LATEST',
-  RTN_CAT_NEWS_URL: '/v1/2/ArticleList?Type=RTN&CatId='
+  RTN_HOT_NEWS_URL: '/v1/1/ArticleList?Type=RTN_ALL&sortBy=VIEW',
+  RTN_LATEST_NEWS_URL: '/v1/1/ArticleList?Type=RTN_ALL&sortBy=LATEST',
+  RTN_CAT_NEWS_URL: '/v1/1/ArticleList?Type=RTN&CatId='
 }
 const CAT_ID = {
-  SOCIETY: '400001',
-  ENTERTAINMENT: '400003',
-  PEOPLE: '400004',
-  FASHION: '400005',
-  LIFE: '400006',
-  FOODANDTRAVEL: '400007',
-  COLUMN: '400008',
-  HILIGHT: '400011',
-  TECH: '400012',
-  INTERNATIONAL: '400013',
-  RECOMMEND: '400020',
-  ONEPOINT: '400014',
-  CLASSIC: '400015',
-  MAKEUP: '400016'
+  POLITICAL: '101',
+  SOCIETY: '102',
+  INTERNATIONAL: '103',
+  FINANCE: '104',
+  LIFE: '105',
+  ENTERTAINMENT: '106',
+  SPORT: '107',
+  GIRL: '124',
+  FORUM: '113',
+  MICROMOIVE: '123',
+  SUPPLEMENT: '118'
 }
 
 module.exports = {
