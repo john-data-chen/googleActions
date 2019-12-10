@@ -64,6 +64,11 @@ app.post('/', async (req, res) => {
 
   async function advanceSearch(agent) {
     let conv = agent.conv();
+    var speech = ''
+    var carousel = {
+      title: 'News',
+      items: {}
+    }
     if (req.body.queryResult.parameters.any)
       await rpn.get(advanceSearchUrl(req.body.queryResult.parameters.any))
         .then(body => {
@@ -73,29 +78,16 @@ app.post('/', async (req, res) => {
           if (body.content.length <= 0) {
             conv.ask(constants.NO_RESULT_SPEECH);
           }
-          var speech = speechMaker(body)
-          conv.ask(speech);
-          conv.ask(new Carousel({
-            title: 'Google Assistant',
-            items: {
-              'WorksWithGoogleAssistantItemKey': {
-                title: 'Works With the Google Assistant',
-                description: 'If you see this logo, you know it will work with the Google Assistant.',
-                image: {
-                  url: 'https://img.nextmag.com.tw//campaign/28/640x_31445736ae5d1f05f873538c7b8bdb11.jpg',
-                  accessibilityText: 'Works With the Google Assistant logo',
-                },
-              },
-              'GoogleHomeItemKey': {
-                title: 'Google Home',
-                description: 'Google Home is a powerful speaker and voice Assistant.',
-                image: {
-                  url: 'https://img.nextmag.com.tw//campaign/28/640x_31445736ae5d1f05f873538c7b8bdb11.jpg',
-                  accessibilityText: 'Google Home'
-                },
-              },
-            },
-          }));
+          speech = speechMaker(body)
+          var news = carouselMaker(body)
+          for (let index = 0; index < news.length; index++) {
+            const element = news[index];
+            carousel.items['News' + (index + 1) + 'ItemKey'] = element
+            if (index == news.length - 1) {
+              conv.ask(speech);
+              conv.ask(new Carousel(carousel));
+            }
+          }
         });
     if (req.body.queryResult.parameters.category)
       await rpn.get(categorySearchUrl(req.body.queryResult.parameters.category))
@@ -107,11 +99,18 @@ app.post('/', async (req, res) => {
           if (body.content.length <= 0) {
             conv.ask(constants.NO_RESULT_SPEECH);
           }
-          var speech = speechMaker(body)
-          conv.ask(speech);
+          speech = speechMaker(body)
+          var news = carouselMaker(body)
+          for (let index = 0; index < news.length; index++) {
+            const element = news[index];
+            carousel.items['News' + (index + 1) + 'ItemKey'] = element
+            if (index == news.length - 1) {
+              conv.ask(speech);
+              conv.ask(new Carousel(carousel));
+            }
+          }
         });
     agent.add(conv);
-    console.log(require('util').inspect(agent, { depth: null }));
     return Promise.resolve(agent);
   }
 
@@ -237,18 +236,19 @@ function speechMaker(body) {
   }
 }
 
-function cardMaker(body) {
-  var cards = []
+function carouselMaker(body) {
+  var carousel = []
   for (let index = 0; index < body.content.length; index++) {
-    cards.push({
-      title: body.content[index].title,
-      imageUrl: body.content[index].sharing.image,
-      text: body.content[index].description,
-      buttonText: '看更多',
-      buttonUrl: body.content[index].sharing.url
+    carousel.push({
+      'title': body.content[index].title,
+      'description': body.content[index].description,
+      'image': {
+        'url': body.content[index].sharing.image,
+        'accessibilityText': body.content[index].description
+      }
     })
     if (index == constants.GOOGLE_ACTIONS_MAX_RETURN - 1) {
-      return cards
+      return carousel
     }
   }
 }

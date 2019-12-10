@@ -1,4 +1,4 @@
-const CONSOLE_LOG = 'on'
+const CONSOLE_LOG = 'off'
 const PORT = 5002
 const ML = {
   SERVER_URL: 'https://mluat-api.twnextdigital.com/',
