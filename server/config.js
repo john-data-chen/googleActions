@@ -1,5 +1,5 @@
 const CONSOLE_LOG = 'on'
-const PORT = 5003
+const PORT = 5002
 const ML = {
   SERVER_URL: 'https://mluat-api.twnextdigital.com/',
   // search keyword (tag)

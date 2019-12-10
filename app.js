@@ -10,8 +10,8 @@ var constants = require(__base + '/server/constants.js')
 // add log time
 require('console-stamp')(console, 'yyyy.mm.dd HH:MM:ss.l')
 
-const { WebhookClient } = require('dialogflow-fulfillment');
-const { Suggestion } = require('dialogflow-fulfillment');
+const { WebhookClient, Suggestion } = require('dialogflow-fulfillment');
+const { Carousel } = require('actions-on-google');
 const express = require('express');
 const bodyParser = require('body-parser');
 const rpn = require('request-promise-native');
@@ -21,7 +21,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post('/', async (req, res) => {
-  console.log(require('util').inspect(req.body, { depth: null }));
+  // console.log(require('util').inspect(req.body, { depth: null }));
   const agent = new WebhookClient({ request: req, response: res });
 
   // Google Actions agent functions start from here
@@ -38,15 +38,15 @@ app.post('/', async (req, res) => {
 
   function fallback(agent) {
     var speech = ''
-    if (req.body.queryResult.languageCode.indexOf('tw') > -1) 
+    if (req.body.queryResult.languageCode.indexOf('tw') > -1)
       speech = constants.DEFAULT_FALLBACK_TW_SPEECH_POOL[
         getRandomInt(constants.DEFAULT_FALLBACK_TW_SPEECH_POOL.length)
       ]
-    else 
+    else
       speech = constants.DEFAULT_FALLBACK_HK_SPEECH_POOL[
         getRandomInt(constants.DEFAULT_FALLBACK_HK_SPEECH_POOL.length)
       ]
-    
+
     agent.add(speech)
     agent.add(new Suggestion(constants.GOOGLE_ACTIONS_SUGGESTION))
   }
@@ -63,6 +63,7 @@ app.post('/', async (req, res) => {
   }
 
   async function advanceSearch(agent) {
+    let conv = agent.conv();
     if (req.body.queryResult.parameters.any)
       await rpn.get(advanceSearchUrl(req.body.queryResult.parameters.any))
         .then(body => {
@@ -70,10 +71,31 @@ app.post('/', async (req, res) => {
           return body
         }).then(body => {
           if (body.content.length <= 0) {
-            agent.add(constants.NO_RESULT_SPEECH);
+            conv.ask(constants.NO_RESULT_SPEECH);
           }
           var speech = speechMaker(body)
-          agent.add(speech);
+          conv.ask(speech);
+          conv.ask(new Carousel({
+            title: 'Google Assistant',
+            items: {
+              'WorksWithGoogleAssistantItemKey': {
+                title: 'Works With the Google Assistant',
+                description: 'If you see this logo, you know it will work with the Google Assistant.',
+                image: {
+                  url: 'https://img.nextmag.com.tw//campaign/28/640x_31445736ae5d1f05f873538c7b8bdb11.jpg',
+                  accessibilityText: 'Works With the Google Assistant logo',
+                },
+              },
+              'GoogleHomeItemKey': {
+                title: 'Google Home',
+                description: 'Google Home is a powerful speaker and voice Assistant.',
+                image: {
+                  url: 'https://img.nextmag.com.tw//campaign/28/640x_31445736ae5d1f05f873538c7b8bdb11.jpg',
+                  accessibilityText: 'Google Home'
+                },
+              },
+            },
+          }));
         });
     if (req.body.queryResult.parameters.category)
       await rpn.get(categorySearchUrl(req.body.queryResult.parameters.category))
@@ -83,11 +105,13 @@ app.post('/', async (req, res) => {
           return body
         }).then(body => {
           if (body.content.length <= 0) {
-            agent.add(constants.NO_RESULT_SPEECH);
+            conv.ask(constants.NO_RESULT_SPEECH);
           }
           var speech = speechMaker(body)
-          agent.add(speech);
+          conv.ask(speech);
         });
+    agent.add(conv);
+    console.log(require('util').inspect(agent, { depth: null }));
     return Promise.resolve(agent);
   }
 
@@ -118,7 +142,7 @@ function categorySearchUrl(category) {
 
     case '熱門':
       break
-    
+
     case '政治':
       url =
         config.ML.SERVER_URL +
@@ -132,21 +156,21 @@ function categorySearchUrl(category) {
         config.ML.RTN_CAT_NEWS_URL +
         config.CAT_ID.SOCIETY
       break
-    
+
     case '國際':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
         config.CAT_ID.INTERNATIONAL
       break
-    
+
     case '財經':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
         config.CAT_ID.FINANCE
       break
-    
+
     case '生活':
       url =
         config.ML.SERVER_URL +
@@ -167,28 +191,28 @@ function categorySearchUrl(category) {
         config.ML.RTN_CAT_NEWS_URL +
         config.CAT_ID.SPORT
       break
-    
+
     case '辣蘋道':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
         config.CAT_ID.GIRL
       break
-    
+
     case '微視蘋':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
         config.CAT_ID.MICROMOIVE
       break
-    
+
     case '論壇':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
         config.CAT_ID.FORUM
       break
-    
+
     case '副刊':
       url =
         config.ML.SERVER_URL +
@@ -209,6 +233,22 @@ function speechMaker(body) {
     speech += body.content[index].title + '\n'
     if (index == constants.GOOGLE_ACTIONS_MAX_RETURN - 1) {
       return speech
+    }
+  }
+}
+
+function cardMaker(body) {
+  var cards = []
+  for (let index = 0; index < body.content.length; index++) {
+    cards.push({
+      title: body.content[index].title,
+      imageUrl: body.content[index].sharing.image,
+      text: body.content[index].description,
+      buttonText: '看更多',
+      buttonUrl: body.content[index].sharing.url
+    })
+    if (index == constants.GOOGLE_ACTIONS_MAX_RETURN - 1) {
+      return cards
     }
   }
 }
