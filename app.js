@@ -10,8 +10,7 @@ var constants = require(__base + '/server/constants.js')
 // add log time
 require('console-stamp')(console, 'yyyy.mm.dd HH:MM:ss.l')
 
-const { WebhookClient } = require('dialogflow-fulfillment');
-const { Suggestion } = require('dialogflow-fulfillment');
+const { WebhookClient, Suggestion, Card } = require('dialogflow-fulfillment');
 const express = require('express');
 const bodyParser = require('body-parser');
 const rpn = require('request-promise-native');
@@ -38,15 +37,15 @@ app.post('/', async (req, res) => {
 
   function fallback(agent) {
     var speech = ''
-    if (req.body.queryResult.languageCode.indexOf('tw') > -1) 
+    if (req.body.queryResult.languageCode.indexOf('tw') > -1)
       speech = constants.DEFAULT_FALLBACK_TW_SPEECH_POOL[
         getRandomInt(constants.DEFAULT_FALLBACK_TW_SPEECH_POOL.length)
       ]
-    else 
+    else
       speech = constants.DEFAULT_FALLBACK_HK_SPEECH_POOL[
         getRandomInt(constants.DEFAULT_FALLBACK_HK_SPEECH_POOL.length)
       ]
-    
+
     agent.add(speech)
     agent.add(new Suggestion(constants.GOOGLE_ACTIONS_SUGGESTION))
   }
@@ -72,7 +71,9 @@ app.post('/', async (req, res) => {
           if (body.content.length <= 0) {
             agent.add(constants.NO_RESULT_SPEECH);
           }
-          var speech = speechMaker(body)
+          var speech = speechMaker(body);
+          var card = cardMaker(body)
+          agent.add(new Card(card));
           agent.add(speech);
         });
     if (req.body.queryResult.parameters.category)
@@ -118,7 +119,7 @@ function categorySearchUrl(category) {
 
     case '熱門':
       break
-    
+
     case '政治':
       url =
         config.ML.SERVER_URL +
@@ -132,21 +133,21 @@ function categorySearchUrl(category) {
         config.ML.RTN_CAT_NEWS_URL +
         config.CAT_ID.SOCIETY
       break
-    
+
     case '國際':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
         config.CAT_ID.INTERNATIONAL
       break
-    
+
     case '財經':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
         config.CAT_ID.FINANCE
       break
-    
+
     case '生活':
       url =
         config.ML.SERVER_URL +
@@ -167,28 +168,28 @@ function categorySearchUrl(category) {
         config.ML.RTN_CAT_NEWS_URL +
         config.CAT_ID.SPORT
       break
-    
+
     case '辣蘋道':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
         config.CAT_ID.GIRL
       break
-    
+
     case '微視蘋':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
         config.CAT_ID.MICROMOIVE
       break
-    
+
     case '論壇':
       url =
         config.ML.SERVER_URL +
         config.ML.RTN_CAT_NEWS_URL +
         config.CAT_ID.FORUM
       break
-    
+
     case '副刊':
       url =
         config.ML.SERVER_URL +
@@ -211,6 +212,21 @@ function speechMaker(body) {
       return speech
     }
   }
+}
+
+function cardMaker(body) {
+  var card = {
+    title: '大亨落難〉張綱維傳失聯2周！遺書疑瘋傳　韋汝說話了',
+    text: '藝人韋汝是從綜藝節目大哥身邊的跟班助理主持工作做起，演藝圈闖蕩17年，雖沒有大紅大紫，但是因為她在2010年與遠航董事長...',
+    imageUrl: 'https://img.nextmag.com.tw//campaign/28/400x400_78b0adc37bc988eb4274f3123806b0e7.jpg',
+    buttonText: '看更多',
+    buttonUrl: 'https://www.nextmag.com.tw/realtimenews/news/485854'
+  }
+  card.title = body.content[0].title
+  card.text = body.content[0].description
+  card.imageUrl = body.content[0].sharing.image
+  card.buttonUrl = body.content[0].sharing.url
+  return card
 }
 
 function getRandomInt(max) {
